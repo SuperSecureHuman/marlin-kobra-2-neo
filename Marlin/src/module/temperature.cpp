@@ -785,6 +785,8 @@ void Temperature::factory_reset() {
    * temperature to succeed.
    */
   void Temperature::PID_autotune(const celsius_t target, const heater_id_t heater_id, const int8_t ncycles, const bool set_result/*=false*/) {
+    if (ncycles < 3) return;
+
     celsius_float_t current_temp = 0.0;
     int cycles = 0;
     bool heating = true;
@@ -974,7 +976,7 @@ void Temperature::factory_reset() {
         break;
       }
 
-      if (cycles > ncycles && cycles > 2) {
+      if (cycles > ncycles) {
         SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_AUTOTUNE_FINISHED);
         TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_AUTOTUNE_DONE)));
 
