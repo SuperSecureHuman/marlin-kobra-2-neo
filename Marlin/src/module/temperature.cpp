@@ -1022,11 +1022,11 @@ void Temperature::factory_reset() {
         goto EXIT_M303;
       }
     }
-    marlin.heatup_done();
 
     disable_all_heaters();
 
     EXIT_M303:
+      marlin.heatup_done();
       TERN_(PRINTER_EVENT_LEDS, printerEventLEDs.onPIDTuningDone(oldcolor));
       TERN_(EXTENSIBLE_UI, ExtUI::onPIDTuning(ExtUI::pidresult_t::PID_DONE));
       TERN_(TEMP_TUNING_MAINTAIN_FAN, adaptive_fan_slowing = true);
