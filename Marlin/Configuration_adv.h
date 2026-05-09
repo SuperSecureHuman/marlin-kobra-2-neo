@@ -413,7 +413,7 @@
 #if ENABLED(PIDTEMP)
   // Add an additional term to the heater power, proportional to the extrusion speed.
   // A well-chosen Kc value should add just enough power to melt the increased material volume.
-  //#define PID_EXTRUSION_SCALING
+  #define PID_EXTRUSION_SCALING
   #if ENABLED(PID_EXTRUSION_SCALING)
     #define LPQ_MAX_LEN 50
     #define DEFAULT_KC 100  // heating power = Kc * e_speed
@@ -452,7 +452,7 @@
    * 5. Enable PID_FAN_SCALING_ALTERNATIVE_DEFINITION and enter the two identified Kf-values in
    *    PID_FAN_SCALING_AT_FULL_SPEED and PID_FAN_SCALING_AT_MIN_SPEED. Enter the minimum speed in PID_FAN_SCALING_MIN_SPEED
    */
-  //#define PID_FAN_SCALING
+  #define PID_FAN_SCALING
   #if ENABLED(PID_FAN_SCALING)
     //#define PID_FAN_SCALING_ALTERNATIVE_DEFINITION
     #if ENABLED(PID_FAN_SCALING_ALTERNATIVE_DEFINITION)
@@ -668,7 +668,7 @@
  */
 #define FAST_PWM_FAN    // Increase the fan PWM frequency. Removes the PWM noise but increases heating in the FET/Arduino
 #if ENABLED(FAST_PWM_FAN)
-  #define FAST_PWM_FAN_FREQUENCY 31400  // Define here to override the defaults below
+  #define FAST_PWM_FAN_FREQUENCY 20000U  // Define here to override the defaults below
   //#define USE_OCR2A_AS_TOP
   #ifndef FAST_PWM_FAN_FREQUENCY
     #ifdef __AVR__
@@ -1453,7 +1453,7 @@
  * vibration and surface artifacts. The algorithm adapts to provide the best possible step smoothing at the
  * lowest stepping frequencies.
  */
-//#define ADAPTIVE_STEP_SMOOTHING
+#define ADAPTIVE_STEP_SMOOTHING
 
 /**
  * Custom Microstepping
@@ -2382,7 +2382,7 @@
   //#define BABYSTEP_XY                     // Also enable X/Y Babystepping. Not supported on DELTA!
   //#define BABYSTEP_INVERT_Z               // Enable if Z babysteps should go the other way
   #define BABYSTEP_MILLIMETER_UNITS       // Specify BABYSTEP_MULTIPLICATOR_(XY|Z) in mm instead of micro-steps
-  #define BABYSTEP_MULTIPLICATOR_Z      0.04       // (steps or mm) Steps or millimeter distance for each Z babystep
+  #define BABYSTEP_MULTIPLICATOR_Z      0.01       // (steps or mm) Steps or millimeter distance for each Z babystep
   #define BABYSTEP_MULTIPLICATOR_XY     1       // (steps or mm) Steps or millimeter distance for each XY babystep
 
   #define DOUBLECLICK_FOR_Z_BABYSTEPPING  // Double-click on the Status Screen for Z Babystepping.
@@ -2642,10 +2642,10 @@
 #endif
 
 // G5 Bézier Curve Support with XYZE destination and IJPQ offsets
-//#define BEZIER_CURVE_SUPPORT        // Requires ~2666 bytes
+#define BEZIER_CURVE_SUPPORT        // Requires ~2666 bytes
 
 #if ANY(ARC_SUPPORT, BEZIER_CURVE_SUPPORT)
-  //#define CNC_WORKSPACE_PLANES      // Allow G2/G3/G5 to operate in XY, ZX, or YZ planes
+  #define CNC_WORKSPACE_PLANES      // Allow G2/G3/G5 to operate in XY, ZX, or YZ planes
 #endif
 
 /**

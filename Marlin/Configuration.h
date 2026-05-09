@@ -1427,7 +1427,7 @@
  *
  * See https://github.com/synthetos/TinyG/wiki/Jerk-Controlled-Motion-Explained
  */
-//#define S_CURVE_ACCELERATION
+#define S_CURVE_ACCELERATION
 #if ENABLED(S_CURVE_ACCELERATION)
   // Define to use 4th instead of 6th order motion curve
   //#define S_CURVE_FACTOR 0.25    // Initial and final acceleration factor, ideally 0.1 to 0.4.
@@ -2248,7 +2248,7 @@
 #if ANY(AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_BILINEAR)
 
   // Set the number of grid points per dimension.
-  #define GRID_MAX_POINTS_X 5
+  #define GRID_MAX_POINTS_X 9
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
 
   // Probe along the Y axis, advancing X after each column
@@ -2258,13 +2258,13 @@
 
     // Beyond the probed grid, continue the implied tilt?
     // Default is to maintain the height of the nearest edge.
-    //#define EXTRAPOLATE_BEYOND_GRID
+    #define EXTRAPOLATE_BEYOND_GRID
 
     //
     // Subdivision of the grid by Catmull-Rom method.
     // Synthesizes intermediate points to produce a more detailed mesh.
     //
-    //#define ABL_BILINEAR_SUBDIVISION
+    #define ABL_BILINEAR_SUBDIVISION
     #if ENABLED(ABL_BILINEAR_SUBDIVISION)
       // Number of subdivisions between probe points
       #define BILINEAR_SUBDIVISIONS 3
@@ -2750,7 +2750,7 @@
  * Use CRC checks and retries on the SD communication.
  */
 #if ENABLED(SDSUPPORT)
-  //#define SD_CHECK_AND_RETRY
+  #define SD_CHECK_AND_RETRY
 #endif
 
 // @section interface
@@ -2765,7 +2765,7 @@
  *
  * :{ 'en':'English', 'an':'Aragonese', 'bg':'Bulgarian', 'ca':'Catalan', 'cz':'Czech', 'da':'Danish', 'de':'German', 'el':'Greek (Greece)', 'el_CY':'Greek (Cyprus)', 'es':'Spanish', 'eu':'Basque-Euskera', 'fi':'Finnish', 'fr':'French', 'gl':'Galician', 'hr':'Croatian', 'hu':'Hungarian', 'it':'Italian', 'jp_kana':'Japanese', 'ko_KR':'Korean (South Korea)', 'nl':'Dutch', 'pl':'Polish', 'pt':'Portuguese', 'pt_br':'Portuguese (Brazilian)', 'ro':'Romanian', 'ru':'Russian', 'sk':'Slovak', 'sv':'Swedish', 'tr':'Turkish', 'uk':'Ukrainian', 'vi':'Vietnamese', 'zh_CN':'Chinese (Simplified)', 'zh_TW':'Chinese (Traditional)' }
  */
-#define LCD_LANGUAGE ru
+#define LCD_LANGUAGE en
 
 /**
  * LCD Character Set

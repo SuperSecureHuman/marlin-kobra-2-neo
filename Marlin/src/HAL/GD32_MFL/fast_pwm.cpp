@@ -52,8 +52,23 @@ void MarlinHAL::set_pwm_duty(const pin_t pin, const uint16_t value, const uint16
       set_pwm_frequency(pin, PWM_FREQUENCY);
     }
 
-    // Set the PWM duty cycle
-    TimerInstance.setCaptureCompare(channel, duty, CCFormat::B8);
+    // Fan pin: 12-bit duty with piecewise-linear RPM curve to match stock fan response
+    if (pin == pin_t(FAN0_PIN)) {
+      int16_t duty_calc = 0;
+      if (duty < 5) {
+        duty_calc = 72 * int32_t(duty) / 5 + 1;
+      } else if (duty < 145) {
+        duty_calc = (169 * int32_t(duty) + 9276) / 140;
+      } else if (duty < 200) {
+        duty_calc = (482 * int32_t(duty) - 56621) / 55;
+      } else {
+        duty_calc = (3373 * int32_t(duty) - 634880) / 55 + 1;
+      }
+      duty_calc = duty_calc < 0 ? 0 : (duty_calc > 4095 ? 4095 : duty_calc);
+      TimerInstance.setCaptureCompare(channel, duty_calc, CCFormat::B12);
+    } else {
+      TimerInstance.setCaptureCompare(channel, duty, CCFormat::B8);
+    }
 
     // Configure pin as PWM output
     pinOpsPinout(TIMER_PinOps, static_cast<pin_size_t>(pin));
