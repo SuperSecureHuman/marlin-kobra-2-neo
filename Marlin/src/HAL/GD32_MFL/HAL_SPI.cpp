@@ -7,7 +7,7 @@
 #include "Arduino.h"
 
 // ==========================================================
-// === ПРЯМЫЕ АДРЕСА РЕГИСТРОВ (Hardcoded) ===
+// === DIRECT REGISTER ADDRESSES (Hardcoded) ===
 // ==========================================================
 
 // RCU
@@ -27,14 +27,14 @@
 #define MFL_SPI0_DATA       (*(volatile uint32_t *)(MFL_SPI0_BASE + 0x0CU))
 
 // ==========================================================
-// === МАСКИ ===
+// === MASKS ===
 // ==========================================================
 #define M_SPI_CKPH    (1U << 0U)
 #define M_SPI_CKPL    (1U << 1U)
 #define M_SPI_MSTMOD  (1U << 2U)
-#define M_SPI_PSC_2   (0U << 3U)  // Делитель 2 → 60 МГц
-#define M_SPI_PSC_4   (1U << 3U)  // Делитель 4 → 30 МГц
-#define M_SPI_PSC_8   (2U << 3U)  // Делитель 8 → 15 МГц
+#define M_SPI_PSC_2   (0U << 3U)  // Divider 2 → 60 MHz
+#define M_SPI_PSC_4   (1U << 3U)  // Divider 4 → 30 MHz
+#define M_SPI_PSC_8   (2U << 3U)  // Divider 8 → 15 MHz
 #define M_SPI_SPIEN   (1U << 6U)
 #define M_SPI_SWNSS   (1U << 8U)
 #define M_SPI_SWNSSEN (1U << 9U)
@@ -42,64 +42,64 @@
 #define M_SPI_TRANS   (1U << 7U)
 
 // Bidirectional Mode
-#define M_SPI_BDOEN   (1U << 14U) 
-#define M_SPI_BDEN    (1U << 15U) 
+#define M_SPI_BDOEN   (1U << 14U)
+#define M_SPI_BDEN    (1U << 15U)
 
 namespace hal_bridge {
 
 // ==========================================================
-// === ИНИЦИАЛИЗАЦИЯ (ФИНАЛЬНЫЙ FIX СИНХРОНИЗАЦИИ) ===
+// === INITIALIZATION (FINAL SYNC FIX) ===
 // ==========================================================
 bool spi_init_direct() {
     // 1. Clocks
     MFL_RCU_APB2EN |= (1U << 0U) | (1U << 2U) | (1U << 12U);
-    
-    // Барьер синхронизации памяти
-    __DSB(); 
-    
+
+    // Memory sync barrier
+    __DSB();
+
     // 2. GPIO Config
     uint32_t temp_ctl0 = MFL_GPIOA_CTL0;
-    temp_ctl0 &= 0x0000FFFFU; 
-    
+    temp_ctl0 &= 0x0000FFFFU;
+
     // PA4(CS)=Out, PA5(SCK)=Alt, PA6(DC)=Out, PA7(MOSI)=Alt
     temp_ctl0 |= (0x3U << 16) | (0xBU << 20) | (0x3U << 24) | (0xBU << 28);
-    
+
     MFL_GPIOA_CTL0 = temp_ctl0;
     MFL_GPIOA_BOP = (1U << 4) | (1U << 6);
-    __DSB(); 
-    
+    __DSB();
+
     // 3. SPI Config
-    MFL_SPI0_CTL0 &= ~M_SPI_SPIEN; 
-    
-    // Сбрасываем возможные флаги ошибок (Dummy read)
+    MFL_SPI0_CTL0 &= ~M_SPI_SPIEN;
+
+    // Clear possible error flags (Dummy read)
     volatile uint32_t dummy = MFL_SPI0_STAT;
     dummy = MFL_SPI0_DATA;
     (void)dummy;
-    
+
     uint32_t spi_cfg = 0;
-    spi_cfg |= M_SPI_MSTMOD;         
-    spi_cfg |= M_SPI_SWNSS | M_SPI_SWNSSEN; 
-    spi_cfg |= M_SPI_CKPL | M_SPI_CKPH;     
-    spi_cfg |= M_SPI_PSC_4;          
+    spi_cfg |= M_SPI_MSTMOD;
+    spi_cfg |= M_SPI_SWNSS | M_SPI_SWNSSEN;
+    spi_cfg |= M_SPI_CKPL | M_SPI_CKPH;
+    spi_cfg |= M_SPI_PSC_4;
     spi_cfg |= M_SPI_BDEN | M_SPI_BDOEN;
-    
+
     MFL_SPI0_CTL0 = spi_cfg;
     __DSB();
-    
+
     MFL_SPI0_CTL0 |= M_SPI_SPIEN;
 
     return true;
 }
 
 // ==========================================================
-// === ФОРМАТ (ЗАГЛУШКА) ===
+// === FORMAT (STUB) ===
 // ==========================================================
 void spi_set_frame_format_direct(bool is_16bit) {
-    (void)is_16bit; 
+    (void)is_16bit;
 }
 
 // ==========================================================
-// === ПИНЫ ===
+// === PINS ===
 // ==========================================================
 void spi_cs_control_direct(bool select) {
     if (select) MFL_GPIOA_BC  = (1U << 4);
@@ -112,7 +112,7 @@ void spi_dc_control_direct(bool data) {
 }
 
 // ==========================================================
-// === ПЕРЕДАЧА ДАННЫХ ===
+// === DATA TRANSMISSION ===
 // ==========================================================
 
 void spi_write_byte_direct(uint8_t data) {
@@ -124,7 +124,7 @@ void spi_write_word_direct(uint16_t data) {
     // 1. MSB
     while (!(MFL_SPI0_STAT & M_SPI_TBE));
     MFL_SPI0_DATA = (uint8_t)(data >> 8);
-    
+
     // 2. LSB
     while (!(MFL_SPI0_STAT & M_SPI_TBE));
     MFL_SPI0_DATA = (uint8_t)(data & 0xFF);
@@ -143,7 +143,7 @@ void spi_wait_for_tx_complete_direct() {
 }
 
 // ==========================================================
-// === ПОДСВЕТКА ===
+// === BACKLIGHT ===
 // ==========================================================
 void tft_backlight_set(pin_size_t bl_pin, bool on) {
     if (bl_pin != NO_PIN) {

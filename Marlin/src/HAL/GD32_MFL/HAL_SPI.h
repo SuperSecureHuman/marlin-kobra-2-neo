@@ -14,41 +14,41 @@
 
 namespace hal_bridge {
 
-    // Инициализация
+    // Initialization
     bool spi_init_direct();
-    
-    // Передача
+
+    // Transmission
     void spi_write_byte_direct(uint8_t data);
     void spi_write_word_direct(uint16_t data);
     void spi_write_buf_direct(const uint8_t* buf, size_t len);
-    
-    // Пины
+
+    // Pins
     void spi_cs_control_direct(bool select);
     void spi_dc_control_direct(bool data);
-    
-    // Настройки
-    // (Функция оставлена для совместимости, но внутри будет пустышкой или безопасной)
+
+    // Settings
+    // (Function kept for compatibility, but will be a no-op or safe stub internally)
     void spi_set_frame_format_direct(bool is_16bit);
     void spi_wait_for_tx_complete_direct();
 
-    // Подсветка
+    // Backlight
     void tft_backlight_set(pin_size_t bl_pin, bool on);
 
     // --- Wrappers ---
-    inline bool spi_init(pin_size_t sck_pin, pin_size_t mosi_pin, pin_size_t miso_pin = NO_PIN) { 
-        return spi_init_direct(); 
+    inline bool spi_init(pin_size_t sck_pin, pin_size_t mosi_pin, pin_size_t miso_pin = NO_PIN) {
+        return spi_init_direct();
     }
-    inline void spi_write_byte(uint8_t out) { 
-        spi_write_byte_direct(out); 
+    inline void spi_write_byte(uint8_t out) {
+        spi_write_byte_direct(out);
     }
-    inline void spi_cs_control(bool select) { 
-        spi_cs_control_direct(select); 
+    inline void spi_cs_control(bool select) {
+        spi_cs_control_direct(select);
     }
-    inline void spi_dc_control(bool data) { 
-        spi_dc_control_direct(data); 
+    inline void spi_dc_control(bool data) {
+        spi_dc_control_direct(data);
     }
-    inline void spi_wait_for_tx_complete() { 
-        spi_wait_for_tx_complete_direct(); 
+    inline void spi_wait_for_tx_complete() {
+        spi_wait_for_tx_complete_direct();
     }
     inline void spi_write_word(uint16_t data) {
         spi_write_word_direct(data);

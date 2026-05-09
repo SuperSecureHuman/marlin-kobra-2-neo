@@ -43,34 +43,34 @@
 using namespace arduino;
 
 struct MarlinSerial : public UsartSerial {
-  // Фабрика (статический метод создания/получения инстанса)
+  // Factory (static method for creating/getting an instance)
   static auto get_instance(usart::USART_Base Base, pin_size_t rxPin = NO_PIN, pin_size_t txPin = NO_PIN) -> MarlinSerial&;
 
-  // Инициализация
+  // Initialization
   void begin(unsigned long baudrate, uint16_t config);
   inline void begin(unsigned long baudrate) { begin(baudrate, SERIAL_8N1); }
 
-  // Перехватчик для режима DMA (Spy Mode)
-  // Обязательно override, так как это виртуальный метод базового класса
+  // DMA mode hook (Spy Mode)
+  // Must override, as this is a virtual method of the base class
   void updateRxDmaBuffer() override;
 
-  // Метод обработки прерывания для режима IRQ (No DMA)
-  // Должен быть public, чтобы статические функции-трамплины в .cpp могли его вызвать
+  // Interrupt handler method for IRQ mode (No DMA)
+  // Must be public so static trampoline functions in .cpp can call it
   #if !ENABLED(SERIAL_DMA)
     void emergency_isr();
   #endif
 
-  // Заглушка, требуемая ядром Marlin (если DMA выключен)
+  // Stub required by Marlin core (if DMA is disabled)
   #if DISABLED(SERIAL_DMA)
     FORCE_INLINE static uint8_t buffer_overruns() { return 0; }
   #endif
 
 protected:
-  // Наследуем конструкторы UsartSerial
+  // Inherit UsartSerial constructors
   using UsartSerial::UsartSerial;
 };
 
-// Объявления глобальных объектов (чтобы линковщик их видел)
+// Global object declarations (so the linker can see them)
 typedef Serial1Class<MarlinSerial> MSerialT;
 extern MSerialT MSerial0;
 extern MSerialT MSerial1;

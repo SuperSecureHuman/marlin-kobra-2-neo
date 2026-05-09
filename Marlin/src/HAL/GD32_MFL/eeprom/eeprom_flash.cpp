@@ -1,11 +1,11 @@
 /**
  * Marlin 3D Printer Firmware - GD32 MFL EEPROM emulation with wear-leveling
- * Строгая логика старого STM32-проекта:
- * - фиксированный регион из HAL/shared/eeprom_api.h
- * - поиск непустого DWORD по всему региону → вычисление слота
- * - запись в новый слот вниз по номерам
- * - стирание всего региона при исчерпании слотов
- * - реализации FLASH_If_Erase / FLASH_If_Write под MFL
+ * Strict logic from the original STM32 project:
+ * - fixed region from HAL/shared/eeprom_api.h
+ * - scan for non-empty DWORD across the region → compute slot
+ * - write to new slot counting downward
+ * - erase entire region when slots are exhausted
+ * - FLASH_If_Erase / FLASH_If_Write implementations for MFL
  */
 
 #include "../../platforms.h"
@@ -22,7 +22,7 @@
 using namespace fmc;
 
 // -------------------------------
-// Конфигурация
+// Configuration
 // -------------------------------
 #ifndef MARLIN_EEPROM_SIZE
   #define MARLIN_EEPROM_SIZE 0x1000U  // 4KB
@@ -36,8 +36,8 @@ using namespace fmc;
 #define EMPTY_UINT8  0xFFU
 
 // -------------------------------
-//Костыль, пересмотреть позже реализацию! 
-// Регион EEPROM из shared
+// FIXME: revisit this implementation later
+// EEPROM region from shared
 static constexpr uint32_t REGION_BEGIN    = FLASH_OUTAGE_DATA_ADDR;
 static constexpr uint32_t REGION_SIZE     = FLASH_OUTAGE_DATA_SIZE;
 static constexpr uint32_t REGION_END_EXCL = REGION_BEGIN + REGION_SIZE;
@@ -50,7 +50,7 @@ static constexpr int EEPROM_SLOTS = int(REGION_SIZE / MARLIN_EEPROM_SIZE);
 static_assert(EEPROM_SLOTS >= 2, "Use at least 2 slots for wear-leveling");
 
 // -------------------------------
-// Буфер и состояние
+// Buffer and state
 // -------------------------------
 static uint8_t ram_eeprom[MARLIN_EEPROM_SIZE] __attribute__((aligned(4))) = {0};
 static bool eeprom_data_written = false;
@@ -64,11 +64,11 @@ static int current_slot = -1;
 size_t PersistentStore::capacity() { return MARLIN_EEPROM_SIZE; }
 
 // -------------------------------
-// Старт доступа (поиск слота как в оригинале)
+// Begin access (slot search as in original)
 // -------------------------------
 bool PersistentStore::access_start() {
 
-  // В STM32-оригинале был EEPROM.begin() для совместимости; в MFL не нужен.
+  // STM32 original had EEPROM.begin() for compatibility; not needed in MFL.
 
   if (current_slot == -1 || eeprom_data_written) {
     if (eeprom_data_written)
@@ -76,7 +76,7 @@ bool PersistentStore::access_start() {
 
     current_slot = -1;
 
-    // Оригинальная логика: сканируем по DWORD весь регион
+    // Original logic: scan the entire region by DWORD
     uint32_t address = REGION_BEGIN;
     while (address < REGION_END_EXCL) {
       const uint32_t v = *(__IO const uint32_t*)address;
@@ -88,12 +88,12 @@ bool PersistentStore::access_start() {
     }
 
     if (current_slot == -1) {
-      // Пусто — инициализируем RAM FF, первая запись пойдёт в "последний" слот
+      // Empty — initialize RAM to 0xFF, first write goes to the "last" slot
       memset(ram_eeprom, EMPTY_UINT8, MARLIN_EEPROM_SIZE);
       current_slot = EEPROM_SLOTS;
     }
     else {
-      // Загружаем текущие настройки
+      // Load current settings
       const uint8_t* src = (const uint8_t*)SLOT_ADDRESS(current_slot);
       memcpy(ram_eeprom, src, MARLIN_EEPROM_SIZE);
       SERIAL_ECHOPGM("EEPROM loaded from slot "); SERIAL_ECHOLN(current_slot);
@@ -106,7 +106,7 @@ bool PersistentStore::access_start() {
 }
 
 // -------------------------------
-// Завершение доступа (запись/стирание)
+// Finish access (write/erase)
 // -------------------------------
 bool PersistentStore::access_finish() {
 
@@ -115,9 +115,9 @@ bool PersistentStore::access_finish() {
   auto& flash = FMC::get_instance();
   bool success = true;
 
-  // Двигаемся "вниз" по слотам
+  // Move "down" through slots
   if (--current_slot < 0) {
-    // Все слоты использованы — стираем весь регион
+    // All slots used — erase the entire region
     SERIAL_ECHOLNPGM("Erasing EEPROM region");
 
     TERN_(HAS_PAUSE_SERVO_OUTPUT, PAUSE_SERVO_OUTPUT());
@@ -131,7 +131,7 @@ bool PersistentStore::access_finish() {
         SERIAL_ECHO("Erase failed at 0x"); SERIAL_ECHO(addr, HEX); SERIAL_EOL();
         success = false; break;
       }
-      // Верификация стирания
+      // Verify erase
       for (uint32_t i = 0; i < FLASH_PAGE_SIZE; i += 4) {
         if (*(__IO const uint32_t*)(addr + i) != EMPTY_UINT32) {
           SERIAL_ECHO("Erase verify failed at 0x"); SERIAL_ECHO(addr + i, HEX); SERIAL_EOL();
@@ -154,12 +154,12 @@ bool PersistentStore::access_finish() {
     current_slot = EEPROM_SLOTS - 1;
   }
 
-  // Запись RAM → новый слот (полусловами, с верификацией)
+  // Write RAM → new slot (halfwords, with verification)
   {
     const uint32_t dest_begin    = SLOT_ADDRESS(current_slot);
     const uint32_t dest_end_excl = dest_begin + MARLIN_EEPROM_SIZE;
 
-    // Строгая защита границ
+    // Strict bounds check
     if (dest_begin < REGION_BEGIN || dest_end_excl > REGION_END_EXCL) {
       SERIAL_ECHOLNPGM("EEPROM: slot bounds violation");
       return false;
@@ -176,7 +176,7 @@ bool PersistentStore::access_finish() {
       if ((off + 1) < MARLIN_EEPROM_SIZE)
         data16 |= uint16_t(ram_eeprom[off + 1]) << 8;
       else
-        data16 |= 0x00FF; // добивка для нечётного байта
+        data16 |= 0x00FF; // padding for odd byte
 
       const FMC_Error_Type wr = flash.program_halfword(addr, data16);
       if (wr != FMC_Error_Type::READY) {
@@ -207,7 +207,7 @@ bool PersistentStore::access_finish() {
 }
 
 // -------------------------------
-// RAM-буфер
+// RAM buffer
 // -------------------------------
 bool PersistentStore::write_data(int &pos, const uint8_t *value, size_t size, uint16_t *crc) {
   while (size--) {
@@ -230,11 +230,11 @@ bool PersistentStore::read_data(int &pos, uint8_t *value, size_t size, uint16_t 
 }
 
 // -------------------------------
-// Реализации shared API под MFL
+// Shared API implementations for MFL
 // -------------------------------
 uint32_t PersistentStore::FLASH_If_Erase(uint32_t addr_start, uint32_t addr_end) {
 
-  // Граница региона: строго внутри [REGION_BEGIN, REGION_END_EXCL)
+  // Region bounds: strictly within [REGION_BEGIN, REGION_END_EXCL)
   if (addr_start < REGION_BEGIN || addr_end > (REGION_END_EXCL - 1)) {
     return FLASHIF_ERASEKO;
   }
@@ -247,7 +247,7 @@ uint32_t PersistentStore::FLASH_If_Erase(uint32_t addr_start, uint32_t addr_end)
 
   bool ok = true;
 
-  // Считаем страницы и стираем постранично
+  // Count pages and erase page by page
   const uint32_t first_page = (addr_start - REGION_BEGIN) / FLASH_PAGE_SIZE;
   const uint32_t last_page  = (addr_end   - REGION_BEGIN) / FLASH_PAGE_SIZE;
 
@@ -255,7 +255,7 @@ uint32_t PersistentStore::FLASH_If_Erase(uint32_t addr_start, uint32_t addr_end)
   for (uint32_t p = first_page; p <= last_page; ++p, page_addr += FLASH_PAGE_SIZE) {
     FMC_Error_Type er = flash.erase_page(page_addr);
     if (er != FMC_Error_Type::READY) { ok = false; break; }
-    // Верификация
+    // Verification
     for (uint32_t i = 0; i < FLASH_PAGE_SIZE; i += 4) {
       if (*(__IO const uint32_t*)(page_addr + i) != EMPTY_UINT32) { ok = false; break; }
     }
@@ -269,7 +269,7 @@ uint32_t PersistentStore::FLASH_If_Erase(uint32_t addr_start, uint32_t addr_end)
 
 uint32_t PersistentStore::FLASH_If_Write(uint32_t destination, uint32_t *p_source, uint32_t length_words) {
 
-  // Должны писать только внутрь региона, по словам
+  // Must write only within the region, in words
   const uint32_t end_addr = destination + (length_words * 4);
   if (destination < REGION_BEGIN || end_addr > REGION_END_EXCL) {
     return FLASHIF_WRITING_ERROR;
@@ -282,10 +282,10 @@ uint32_t PersistentStore::FLASH_If_Write(uint32_t destination, uint32_t *p_sourc
 
   uint32_t addr = destination;
   for (uint32_t i = 0; i < length_words; ++i, addr += 4) {
-    // Пишем двумя полусловами (16-бит), как требует FMC
+    // Write as two halfwords (16-bit) as required by FMC
     const uint32_t word = p_source[i];
 
-    // Нижнее полуслово
+    // Lower halfword
     {
       const uint16_t hw = uint16_t(word & 0xFFFF);
       const FMC_Error_Type wr = flash.program_halfword(addr + 0, hw);
@@ -293,7 +293,7 @@ uint32_t PersistentStore::FLASH_If_Write(uint32_t destination, uint32_t *p_sourc
       if (*(__IO const uint16_t*)(addr + 0) != hw) { ok = false; break; }
     }
 
-    // Верхнее полуслово
+    // Upper halfword
     {
       const uint16_t hw = uint16_t((word >> 16) & 0xFFFF);
       const FMC_Error_Type wr = flash.program_halfword(addr + 2, hw);
@@ -306,7 +306,7 @@ uint32_t PersistentStore::FLASH_If_Write(uint32_t destination, uint32_t *p_sourc
 
   if (!ok) return FLASHIF_WRITING_ERROR;
 
-  // Доп. контроль, как в STM32: сверка слова
+  // Additional check, as in STM32: verify word
   addr = destination;
   for (uint32_t i = 0; i < length_words; ++i, addr += 4) {
     if (*(__IO const uint32_t*)addr != p_source[i]) {
@@ -318,4 +318,3 @@ uint32_t PersistentStore::FLASH_If_Write(uint32_t destination, uint32_t *p_sourc
 }
 
 #endif // FLASH_EEPROM_EMULATION
-

@@ -12,46 +12,45 @@ class TFT_SPI {
     static bool tft_busy;
 
 public:
-    // Инициализация и состояние
+    // Initialization and state
     static void init();
     static void set_busy(bool state);
     static bool get_busy();
     static bool isBusy();
     static void abort();
-    
-    // Идентификация и управление
+
+    // Identification and control
     static uint32_t getID();
     static void backlight(bool on);
-    
-    // Геометрия
+
+    // Geometry
     static void setDisplayAddress(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     static void setWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     static void clearScreen(uint16_t color);
-    
-    // Управление транзакцией
+
+    // Transaction control
     static void dataTransferBegin(uint16_t dataWidth = 16);
     static void dataTransferEnd();
-    
-    // Низкоуровневая запись
-    // writeReg: uint8_t, так как команды дисплея всегда 8-битные
+
+    // Low-level write
+    // writeReg: uint8_t since display commands are always 8-bit
     static void writeReg(uint16_t reg);
-    
-    // writeData: uint16_t, чтобы принимать цвета и координаты (MSB->LSB)
-    // и чтобы компилятор не ругался на переполнение при 0xFFFF
+
+    // writeData: uint16_t to accept colors and coordinates (MSB->LSB)
+    // and to avoid compiler overflow warnings with 0xFFFF
     static void writeData(uint16_t data);
-    
-    // Парсер скриптов инициализации
+
+    // Init script parser
     static void commandList(const uint16_t *list);
-    
-    // Массовая передача (счетчики uint32_t для экранов > 256x256)
+
+    // Bulk transfer (uint32_t counters for screens > 256x256)
     static void writeSequence(const uint16_t *data, uint32_t count);
     static void writeMultiple(uint16_t color, uint32_t count);
-    
-    // DMA-совместимые обертки (в нашей реализации вызывают обычные методы)
+
+    // DMA-compatible wrappers (in our implementation, call the regular methods)
     static void writeSequence_DMA(uint16_t *data, uint32_t count);
     static void writeMultiple_DMA(uint16_t color, uint32_t count);
 };
 typedef TFT_SPI TFT_IO_DRIVER;
 #endif // TFT_GENERIC
 #endif // ARDUINO_ARCH_MFL
-
