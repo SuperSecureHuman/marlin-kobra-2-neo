@@ -1,0 +1,44 @@
+name: Marlin Upstream Watch
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 9am UTC daily
+  workflow_dispatch:       # allow manual trigger from GitHub UI
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream Marlin
+        run: |
+          git remote add marlin-upstream https://github.com/MarlinFirmware/Marlin.git
+          git fetch marlin-upstream bugfix-2.1.x --no-tags --depth=200
+
+      - name: Check for relevant upstream commits
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 .github/scripts/check_upstream.py
+
+      - name: Commit updated tracking SHA
+        run: |
+          git add .github/upstream_sha.txt
+          git diff --staged --quiet || git commit -m "chore: update upstream tracking SHA [skip ci]"
+          git push
