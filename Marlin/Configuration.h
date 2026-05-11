@@ -3524,7 +3524,7 @@
    * ANET_BLACK   - Theme used for Anet ET4/5
    * :['BLUE_MARLIN', 'BLACK_MARLIN', 'ANET_BLACK']
    */
-  #define TFT_THEME BLACK_MARLIN
+  #define TFT_THEME BLUE_MARLIN
 
   //#define TFT_SHARED_IO   // I/O is shared between TFT display and other devices. Disable async data transfer.
 
