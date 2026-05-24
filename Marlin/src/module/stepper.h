@@ -710,8 +710,9 @@ class Stepper {
       CBI(axis_enabled.bits, INDEX_OF_AXIS(axis, eindex));
       #if HAS_Z_AXIS
         if (TERN0(Z_CAN_FALL_DOWN, axis == Z_AXIS)) {
-          z_min_trusted = false;
-          current_position.z = 0;
+          set_all_unhomed();         // Re-homing required before any motion
+          current_position.z = 0;    // Assume the head has fallen to the bed
+          sync_plan_position();      // Sync planner step counts to match
         }
       #endif
       // TODO: DELTA should have "Z" state affect all (ABC) motors and treat "XY" on/off as meaningless
