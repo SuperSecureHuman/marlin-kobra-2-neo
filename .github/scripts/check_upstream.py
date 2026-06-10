@@ -43,6 +43,7 @@ RELEVANT = [
     "Marlin/src/gcode/calibrate/",
     "Marlin/src/gcode/feature/ft_motion/",
     "Marlin/src/gcode/feature/advance/",
+    "Marlin/src/gcode/feature/pause/",
     "Marlin/src/gcode/sd/M24_M25",
     "Marlin/src/gcode/motion/",
     "Marlin/src/gcode/probe/",
@@ -157,10 +158,9 @@ def main():
 
     print(f"Upstream: {len(all_commits)} new commits, {len(relevant_commits)} relevant.")
 
-    SHA_FILE.write_text(new_sha + "\n")
-
     if not relevant_commits:
         print("No relevant commits — no issue created.")
+        SHA_FILE.write_text(new_sha + "\n")
         return
 
     # ── Build issue body ────────────────────────────────────────────────
@@ -201,6 +201,7 @@ def main():
         print("Failed to create issue.", file=sys.stderr)
         sys.exit(1)
 
+    SHA_FILE.write_text(new_sha + "\n")
     print(f"Issue created: {issue_url}")
 
     # ── One comment per relevant commit ─────────────────────────────────
